@@ -70,9 +70,10 @@ class RoombaBot:
                     self.logger.debug(
                         f"Room {room_id} {'blocked' if block else 'unblocked'} successfully: {response}"
                     )
+                    local_users = await self.get_local_users(room_id)
                     await self.send_message(
                         self.moderation_room_id,
-                        f"Room {room_id} {'blocked' if block else 'unblocked'} successfully.",
+                        f"Room {room_id} {'blocked' if block else 'unblocked'} successfully. Local users: {', '.join(local_users)}",
                     )
                 else:
                     self.logger.error(
@@ -82,6 +83,34 @@ class RoombaBot:
                         self.moderation_room_id,
                         f"Failed to {'block' if block else 'unblock'} room {room_id}.",
                     )
+
+
+async def get_local_users(self, room_id):
+    """Get the local users in a room.
+
+    Args:
+        room_id (str): The room ID to get the local users from.
+
+    Returns:
+        list: The list of local users in the room.
+    """
+    members_url = f"{self.client.homeserver}/_matrix/client/r0/rooms/{room_id}/members"
+    headers = {
+        "Authorization": f"Bearer {self.client.access_token}",
+        "Content-Type": "application/json",
+    }
+
+    local_users = []
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(members_url, headers=headers) as resp:
+            if resp.status == 200:
+                members = await resp.json()
+                for member in members.get("chunk", []):
+                    user_id = member.get("user_id")
+                    if user_id and user_id.endswith(self.client.user_id.split(":")[1]):
+                        local_users.append(user_id)
+    return local_users
 
     async def send_message(self, room_id, message):
         """Send a message to a room.
