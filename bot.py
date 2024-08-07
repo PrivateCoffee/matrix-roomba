@@ -48,6 +48,11 @@ class RoombaBot:
             await self.block_room(event.body.split()[2], True)
         elif event.body.startswith("!roomba unblock"):
             await self.block_room(event.body.split()[2], False)
+        elif event.body.startswith("!roomba "):
+            await self.send_message(
+                self.moderation_room_id,
+                "Unknown command. Use '!roomba block <room_id>' or '!roomba unblock <room_id>'.",
+            )
 
     async def block_room(self, room_id, block):
         """Block or unblock a room.
@@ -84,46 +89,49 @@ class RoombaBot:
                         f"Failed to {'block' if block else 'unblock'} room {room_id}.",
                     )
 
-
-async def get_local_users(self, room_id):
-    """Get the local users in a room.
-
-    Args:
-        room_id (str): The room ID to get the local users from.
-
-    Returns:
-        list: The list of local users in the room.
-    """
-    members_url = f"{self.client.homeserver}/_matrix/client/r0/rooms/{room_id}/members"
-    headers = {
-        "Authorization": f"Bearer {self.client.access_token}",
-        "Content-Type": "application/json",
-    }
-
-    local_users = []
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get(members_url, headers=headers) as resp:
-            if resp.status == 200:
-                members = await resp.json()
-                for member in members.get("chunk", []):
-                    user_id = member.get("user_id")
-                    if user_id and user_id.endswith(self.client.user_id.split(":")[1]):
-                        local_users.append(user_id)
-    return local_users
-
-    async def send_message(self, room_id, message):
-        """Send a message to a room.
+    async def get_local_users(self, room_id):
+        """Get the local users in a room.
 
         Args:
-            room_id (str): The room ID to send the message to.
-            message (str): The message to send.
+            room_id (str): The room ID to get the local users from.
+
+        Returns:
+            list: The list of local users in the room.
         """
-        content = {"msgtype": "m.text", "body": message}
-        self.logger.debug(f"Sending message to {room_id}: {message}")
-        await self.client.room_send(
-            room_id, message_type="m.room.message", content=content
+        members_url = (
+            f"{self.client.homeserver}/_matrix/client/r0/rooms/{room_id}/members"
         )
+        headers = {
+            "Authorization": f"Bearer {self.client.access_token}",
+            "Content-Type": "application/json",
+        }
+
+        local_users = []
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(members_url, headers=headers) as resp:
+                if resp.status == 200:
+                    members = await resp.json()
+                    for member in members.get("chunk", []):
+                        user_id = member.get("user_id")
+                        if user_id and user_id.endswith(
+                            self.client.user_id.split(":")[1]
+                        ):
+                            local_users.append(user_id)
+        return local_users
+
+        async def send_message(self, room_id, message):
+            """Send a message to a room.
+
+            Args:
+                room_id (str): The room ID to send the message to.
+                message (str): The message to send.
+            """
+            content = {"msgtype": "m.text", "body": message}
+            self.logger.debug(f"Sending message to {room_id}: {message}")
+            await self.client.room_send(
+                room_id, message_type="m.room.message", content=content
+            )
 
 
 async def main():
