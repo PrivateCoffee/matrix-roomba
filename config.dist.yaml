@@ -1,0 +1,4 @@
+homeserver: "https://matrix.example.com"
+user_id: "@roomba:example.com"
+access_token: "YOUR_ACCESS_TOKEN"
+moderation_room_id: "!moderation_room_id:example.com"
