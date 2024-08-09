@@ -2,3 +2,11 @@ homeserver: "https://matrix.example.com"
 user_id: "@roomba:example.com"
 access_token: "YOUR_ACCESS_TOKEN"
 moderation_room_id: "!moderation_room_id:example.com"
+
+# Above credentials need to be directly from your homeserver.
+
+# If your moderation room is encrypted, you need to use Pantalaimon and fill the following fields:
+
+pantalaimon:
+  homeserver: "http://localhost:8010"
+  access_token: "YOUR_PANTALAIMON_ACCESS_TOKEN"

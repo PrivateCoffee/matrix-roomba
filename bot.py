@@ -6,7 +6,15 @@ import logging
 
 
 class RoombaBot:
-    def __init__(self, homeserver, user_id, access_token, moderation_room_id):
+    def __init__(
+        self,
+        homeserver,
+        user_id,
+        access_token,
+        moderation_room_id,
+        pantalaimon_homeserver=None,
+        pantalaimon_token=None,
+    ):
         """Initialize the bot.
 
         Args:
@@ -14,9 +22,20 @@ class RoombaBot:
             user_id (str): The user ID of the bot.
             access_token (str): The access token of the bot.
             moderation_room_id (str): The room ID of the moderation room.
+            pantalaimon_homeserver (str, optional): The homeserver URL of the Pantalaimon instance. Defaults to None, which means no Pantalaimon.
+            pantalaimon_token (str, optional): The access token of the Pantalaimon instance. Defaults to None. Required if pantalaimon_homeserver is set.
         """
-        self.client = nio.AsyncClient(homeserver, user_id)
-        self.client.access_token = access_token
+        self.homeserver = homeserver
+        self.access_token = access_token
+
+        if pantalaimon_homeserver and pantalaimon_token:
+            self.client = nio.AsyncClient(pantalaimon_homeserver, user_id)
+            self.client.access_token = pantalaimon_token
+
+        else:
+            self.client = nio.AsyncClient(homeserver, user_id)
+            self.client.access_token = access_token
+
         self.moderation_room_id = moderation_room_id
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
@@ -61,9 +80,9 @@ class RoombaBot:
             room_id (str): The room ID to block or unblock.
             block (bool): Whether to block or unblock the room.
         """
-        url = f"{self.client.homeserver}/_synapse/admin/v1/rooms/{room_id}/block"
+        url = f"{self.homeserver}/_synapse/admin/v1/rooms/{room_id}/block"
         headers = {
-            "Authorization": f"Bearer {self.client.access_token}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
         }
         body = {"block": block}
@@ -98,11 +117,9 @@ class RoombaBot:
         Returns:
             list: The list of local users in the room.
         """
-        members_url = (
-            f"{self.client.homeserver}/_matrix/client/r0/rooms/{room_id}/members"
-        )
+        members_url = f"{self.homeserver}/_matrix/client/r0/rooms/{room_id}/members"
         headers = {
-            "Authorization": f"Bearer {self.client.access_token}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
         }
 
@@ -144,8 +161,22 @@ async def main():
     access_token = config["access_token"]
     moderation_room_id = config["moderation_room_id"]
 
+    if "pantalaimon" in config:
+        pantalaimon_homeserver = config["pantalaimon"]["homeserver"]
+        pantalaimon_token = config["pantalaimon"]["access_token"]
+    else:
+        pantalaimon_homeserver = None
+        pantalaimon_token = None
+
     # Create and start the bot
-    bot = RoombaBot(homeserver, user_id, access_token, moderation_room_id)
+    bot = RoombaBot(
+        homeserver,
+        user_id,
+        access_token,
+        moderation_room_id,
+        pantalaimon_homeserver,
+        pantalaimon_token,
+    )
     await bot.start()
 
 
