@@ -14,6 +14,8 @@ class RoombaBot:
         moderation_room_id,
         pantalaimon_homeserver=None,
         pantalaimon_token=None,
+        shutdown_title=None,
+        shutdown_message=None,
     ):
         """Initialize the bot.
 
@@ -24,9 +26,16 @@ class RoombaBot:
             moderation_room_id (str): The room ID of the moderation room.
             pantalaimon_homeserver (str, optional): The homeserver URL of the Pantalaimon instance. Defaults to None, which means no Pantalaimon.
             pantalaimon_token (str, optional): The access token of the Pantalaimon instance. Defaults to None. Required if pantalaimon_homeserver is set.
+            shutdown_title (str, optional): The title of the shutdown message. Defaults to None.
+            shutdown_message (str, optional): The message of the shutdown message. Defaults to None.
         """
         self.homeserver = homeserver
         self.access_token = access_token
+
+        self.shutdown_title = shutdown_title or "Content Violation Notification"
+        self.shutdown_message = shutdown_message or (
+            "A room you were a member of has been shutdown on this server due to content violations. Please review our Terms of Service."
+        )
 
         if pantalaimon_homeserver and pantalaimon_token:
             self.client = nio.AsyncClient(pantalaimon_homeserver)
@@ -69,10 +78,21 @@ class RoombaBot:
             await self.block_room(event.body.split()[2], True)
         elif event.body.startswith("!roomba unblock"):
             await self.block_room(event.body.split()[2], False)
+        elif event.body.startswith("!roomba shutdown"):
+            parts = event.body.split()
+
+            if "--purge" in parts:
+                parts.remove("--purge")
+                purge = True
+            else:
+                purge = False
+
+            room_id = parts[2]
+            await self.shutdown_room(room_id, purge)
         elif event.body.startswith("!roomba "):
             await self.send_message(
                 self.moderation_room_id,
-                "Unknown command. Use '!roomba block <room_id>' or '!roomba unblock <room_id>'.",
+                "Unknown command. Use '!roomba block <room_id>', '!roomba unblock <room_id>', or '!roomba shutdown <room_id> [--purge]'.",
             )
 
     async def block_room(self, room_id, block):
@@ -139,6 +159,48 @@ class RoombaBot:
                             local_users.append(user_id)
         return local_users
 
+    async def shutdown_room(self, room_id, purge=True):
+        """Shutdown and optionally purge a room.
+
+        Args:
+            room_id (str): The room ID to shut down.
+            purge (bool, optional): Whether to purge the room. Defaults to True.
+        """
+        url = f"{self.homeserver}/_synapse/admin/v2/rooms/{room_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "new_room_user_id": self.client.user_id,
+            "room_name": self.shutdown_title,
+            "message": self.shutdown_message,
+            "block": True,
+            "purge": purge,
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.delete(url, headers=headers, json=body) as resp:
+                if resp.status == 200:
+                    response = await resp.json()
+                    delete_id = response.get("delete_id")
+                    self.logger.debug(
+                        f"Room {room_id} shutdown initiated successfully: delete_id={delete_id}"
+                    )
+                    local_users = await self.get_local_users(room_id)
+                    await self.send_message(
+                        self.moderation_room_id,
+                        f"Room {room_id} shutdown initiated successfully. Delete ID: {delete_id}. Local users: {', '.join(local_users)}",
+                    )
+                else:
+                    self.logger.error(
+                        f"Failed to shutdown room {room_id}: {resp.status}"
+                    )
+                    await self.send_message(
+                        self.moderation_room_id,
+                        f"Failed to shutdown room {room_id}.",
+                    )
+
     async def send_message(self, room_id, message):
         """Send a message to a room.
 
@@ -170,6 +232,10 @@ async def main():
         pantalaimon_homeserver = None
         pantalaimon_token = None
 
+    if "shutdown" in config:
+        shutdown_title = config["shutdown"].get("title")
+        shutdown_message = config["shutdown"].get("message")
+
     # Create and start the bot
     bot = RoombaBot(
         homeserver,
@@ -178,6 +244,8 @@ async def main():
         moderation_room_id,
         pantalaimon_homeserver,
         pantalaimon_token,
+        shutdown_title,
+        shutdown_message,
     )
     await bot.start()
 
