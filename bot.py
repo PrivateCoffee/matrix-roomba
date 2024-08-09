@@ -95,6 +95,10 @@ class RoombaBot:
                 "Unknown command. Use '!roomba block <room_id>', '!roomba unblock <room_id>', or '!roomba shutdown <room_id> [--purge]'.",
             )
 
+        await self.client.room_read_markers(
+            self.moderation_room_id, event.event_id, event.event_id
+        )
+
     async def block_room(self, room_id, block):
         """Block or unblock a room.
 
