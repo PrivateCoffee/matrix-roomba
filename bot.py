@@ -29,12 +29,14 @@ class RoombaBot:
         self.access_token = access_token
 
         if pantalaimon_homeserver and pantalaimon_token:
-            self.client = nio.AsyncClient(pantalaimon_homeserver, user_id)
+            self.client = nio.AsyncClient(pantalaimon_homeserver)
             self.client.access_token = pantalaimon_token
 
         else:
-            self.client = nio.AsyncClient(homeserver, user_id)
+            self.client = nio.AsyncClient(homeserver)
             self.client.access_token = access_token
+
+        self.client.user_id = user_id
 
         self.moderation_room_id = moderation_room_id
         self.logger = logging.getLogger(__name__)
