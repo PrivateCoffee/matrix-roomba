@@ -235,6 +235,9 @@ async def main():
     if "shutdown" in config:
         shutdown_title = config["shutdown"].get("title")
         shutdown_message = config["shutdown"].get("message")
+    else:
+        shutdown_title = None
+        shutdown_message = None
 
     # Create and start the bot
     bot = RoombaBot(
