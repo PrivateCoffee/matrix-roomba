@@ -139,18 +139,18 @@ class RoombaBot:
                             local_users.append(user_id)
         return local_users
 
-        async def send_message(self, room_id, message):
-            """Send a message to a room.
+    async def send_message(self, room_id, message):
+        """Send a message to a room.
 
-            Args:
-                room_id (str): The room ID to send the message to.
-                message (str): The message to send.
-            """
-            content = {"msgtype": "m.text", "body": message}
-            self.logger.debug(f"Sending message to {room_id}: {message}")
-            await self.client.room_send(
-                room_id, message_type="m.room.message", content=content
-            )
+        Args:
+            room_id (str): The room ID to send the message to.
+            message (str): The message to send.
+        """
+        content = {"msgtype": "m.text", "body": message}
+        self.logger.debug(f"Sending message to {room_id}: {message}")
+        await self.client.room_send(
+            room_id, message_type="m.room.message", content=content
+        )
 
 
 async def main():
