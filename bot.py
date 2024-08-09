@@ -61,6 +61,7 @@ class RoombaBot:
 
     async def start(self):
         """Start the bot."""
+        await self.client.sync(timeout=30000)
         self.client.add_event_callback(self.message_callback, nio.RoomMessageText)
         await self.client.sync_forever(timeout=30000)
 
