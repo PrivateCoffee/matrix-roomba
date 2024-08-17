@@ -184,6 +184,8 @@ class RoombaBot:
             "purge": purge,
         }
 
+        local_users = await self.get_local_users(room_id)
+
         async with aiohttp.ClientSession() as session:
             async with session.delete(url, headers=headers, json=body) as resp:
                 if resp.status == 200:
@@ -192,7 +194,6 @@ class RoombaBot:
                     self.logger.debug(
                         f"Room {room_id} shutdown initiated successfully: delete_id={delete_id}"
                     )
-                    local_users = await self.get_local_users(room_id)
                     await self.send_message(
                         self.moderation_room_id,
                         f"Room {room_id} shutdown initiated successfully. Delete ID: {delete_id}. Local users: {', '.join(local_users)}",
