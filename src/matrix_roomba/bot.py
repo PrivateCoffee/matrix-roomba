@@ -90,7 +90,7 @@ class RoombaBot:
 
             room_id = parts[2]
             await self.shutdown_room(room_id, purge)
-        elif event.body.startswith("!roomba "):
+        elif event.body and event.body.split()[0] == "!roomba":
             await self.send_message(
                 self.moderation_room_id,
                 "Unknown command. Use '!roomba block <room_id>', '!roomba unblock <room_id>', or '!roomba shutdown <room_id> [--purge]'.",
