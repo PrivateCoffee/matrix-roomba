@@ -221,7 +221,7 @@ class RoombaBot:
         )
 
 
-async def main():
+async def main_async():
     # Load configuration from config.yaml
     with open("config.yaml", "r") as config_file:
         config = yaml.safe_load(config_file)
@@ -259,5 +259,9 @@ async def main():
     await bot.start()
 
 
+def main():
+    asyncio.get_event_loop().run_until_complete(main_async())
+
+
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(main())
+    main()
