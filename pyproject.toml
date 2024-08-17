@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project]
+name = "matrix-roomba"
+version = "0.1.0"
+
+authors = [{ name = "Private.coffee Team", email = "support@private.coffee" }]
+
+description = "A Matrix bot that helps you shut down rooms"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+packages = ["src/matrix_roomba"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "matrix-nio",
+    "pyyaml"
+]
+
+[project.urls]
+"Homepage" = "https://git.private.coffee/PrivateCoffee/matrix-roomba"
+"Bug Tracker" = "https://git.private.coffee/PrivateCoffee/matrix-roomba/issues"
+
+[project.scripts]
+roomba = "matrix_roomba.bot:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/matrix_roomba"]
