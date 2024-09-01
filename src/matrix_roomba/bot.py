@@ -248,16 +248,51 @@ class RoombaBot:
         payload = {"locked": locked}
 
         async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{self.homeserver}/_synapse/admin/v1/users/{user_id}/joined_rooms",
+                headers=headers,
+            ) as resp:
+                if resp.status == 200:
+                    joined_rooms = await resp.json()
+                    joined_rooms = joined_rooms.get("joined_rooms", [])
+                else:
+                    joined_rooms = []
+
             async with session.put(url, headers=headers, json=payload) as resp:
                 if resp.status == 200:
-                    self.logger.debug(f"User {user_id} {'locked' if locked else 'unlocked'} successfully")
-                    await self.send_message(
-                        self.moderation_room_id, f"User {user_id} {'locked' if locked else 'unlocked'} successfully."
+                    self.logger.debug(
+                        f"User {user_id} {'locked' if locked else 'unlocked'} successfully"
                     )
+
+                    message = f"User {user_id} {'locked' if locked else 'unlocked'} successfully."
+
+                    if joined_rooms:
+                        message += "\n\nJoined rooms:\n"
+
+                        for room_id in joined_rooms:
+                            room_url = (
+                                f"{self.homeserver}/_synapse/admin/v1/rooms/{room_id}"
+                            )
+                            async with session.get(
+                                room_url, headers=headers
+                            ) as room_resp:
+                                if room_resp.status == 200:
+                                    room_name = (await room_resp.json()).get("name")
+                                else:
+                                    room_name = None
+
+                            message += (
+                                f"\n- {room_id}{f' ({room_name})' if room_name else ''}"
+                            )
+
+                    await self.send_message(self.moderation_room_id, message)
                 else:
-                    self.logger.error(f"Failed to {'lock' if locked else 'unlock'} user {user_id}: {resp.status}")
+                    self.logger.error(
+                        f"Failed to {'lock' if locked else 'unlock'} user {user_id}: {resp.status}"
+                    )
                     await self.send_message(
-                        self.moderation_room_id, f"Failed to {'lock' if locked else 'unlock'} user {user_id}."
+                        self.moderation_room_id,
+                        f"Failed to {'lock' if locked else 'unlock'} user {user_id}.",
                     )
 
     async def send_message(self, room_id, message):
