@@ -250,14 +250,14 @@ class RoombaBot:
         async with aiohttp.ClientSession() as session:
             async with session.put(url, headers=headers, json=payload) as resp:
                 if resp.status == 200:
-                    self.logger.debug(f"User {user_id} {"locked" if locked else "unlocked"} successfully")
+                    self.logger.debug(f"User {user_id} {'locked' if locked else 'unlocked'} successfully")
                     await self.send_message(
-                        self.moderation_room_id, f"User {user_id} {"locked" if locked else "unlocked"} successfully."
+                        self.moderation_room_id, f"User {user_id} {'locked' if locked else 'unlocked'} successfully."
                     )
                 else:
-                    self.logger.error(f"Failed to {"lock" if locked else "unlock"} user {user_id}: {resp.status}")
+                    self.logger.error(f"Failed to {'lock' if locked else 'unlock'} user {user_id}: {resp.status}")
                     await self.send_message(
-                        self.moderation_room_id, f"Failed to {"lock" if locked else "unlock"} user {user_id}."
+                        self.moderation_room_id, f"Failed to {'lock' if locked else 'unlock'} user {user_id}."
                     )
 
     async def send_message(self, room_id, message):
