@@ -224,57 +224,31 @@ class RoombaBot:
                         f"Failed to shutdown room {room_id}.",
                     )
 
-    async def lock_user(self, user_id):
-        """Lock a user.
+    async def lock_user(self, user_id, locked=True):
+        """Lock or unlock a user.
 
         Args:
             user_id (str): The user ID to lock.
+            locked (bool, optional): Whether to lock (True) or unlock (False) the user. Defaults to True.
         """
         url = f"{self.homeserver}/_synapse/admin/v2/users/{user_id}"
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
         }
-        payload = {"locked": True}
+        payload = {"locked": locked}
 
         async with aiohttp.ClientSession() as session:
             async with session.put(url, headers=headers, json=payload) as resp:
                 if resp.status == 200:
-                    self.logger.debug(f"User {user_id} locked successfully")
+                    self.logger.debug(f"User {user_id} {"locked" if locked else "unlocked"} successfully")
                     await self.send_message(
-                        self.moderation_room_id, f"User {user_id} locked successfully."
+                        self.moderation_room_id, f"User {user_id} {"locked" if locked else "unlocked"} successfully."
                     )
                 else:
-                    self.logger.error(f"Failed to lock user {user_id}: {resp.status}")
+                    self.logger.error(f"Failed to {"lock" if locked else "unlock"} user {user_id}: {resp.status}")
                     await self.send_message(
-                        self.moderation_room_id, f"Failed to lock user {user_id}."
-                    )
-
-    async def unlock_user(self, user_id):
-        """Unlock a user.
-
-        Args:
-            user_id (str): The user ID to unlock.
-        """
-        url = f"{self.homeserver}/_synapse/admin/v2/users/{user_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json",
-        }
-        payload = {"locked": False}
-
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url, headers=headers, json=payload) as resp:
-                if resp.status == 200:
-                    self.logger.debug(f"User {user_id} unlocked successfully")
-                    await self.send_message(
-                        self.moderation_room_id,
-                        f"User {user_id} unlocked successfully.",
-                    )
-                else:
-                    self.logger.error(f"Failed to unlock user {user_id}: {resp.status}")
-                    await self.send_message(
-                        self.moderation_room_id, f"Failed to unlock user {user_id}."
+                        self.moderation_room_id, f"Failed to {"lock" if locked else "unlock"} user {user_id}."
                     )
 
     async def send_message(self, room_id, message):
