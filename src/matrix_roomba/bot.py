@@ -111,7 +111,7 @@ class RoombaBot:
             room_id (str): The room ID to block or unblock.
             block (bool): Whether to block or unblock the room.
         """
-        url = f"{self.homeserver}/_synapse/admin/v1/rooms/{room_id}/block"
+        url = f"{self.homeserver}/_synapse/admin/v1/rooms/{room_id}"
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
@@ -119,11 +119,17 @@ class RoombaBot:
         body = {"block": block}
 
         async with aiohttp.ClientSession() as session:
-            async with session.put(url, headers=headers, json=body) as resp:
+            async with session.get(url, headers=headers) as resp:
+                if resp.status == 200:
+                    room_name = (await resp.json()).get("name")
+                else:
+                    room_name = None
+
+            async with session.put(f"{url}/block", headers=headers, json=body) as resp:
                 if resp.status == 200:
                     response = await resp.json()
                     self.logger.debug(
-                        f"Room {room_id} {'blocked' if block else 'unblocked'} successfully: {response}"
+                        f"Room {room_id}{f' ({room_name})' if room_name else ''} {'blocked' if block else 'unblocked'} successfully: {response}"
                     )
                     local_users = await self.get_local_users(room_id)
                     await self.send_message(
@@ -176,6 +182,7 @@ class RoombaBot:
             purge (bool, optional): Whether to purge the room. Defaults to True.
         """
         url = f"{self.homeserver}/_synapse/admin/v2/rooms/{room_id}"
+        v1_url = f"{self.homeserver}/_synapse/admin/v1/rooms/{room_id}"
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
@@ -191,16 +198,22 @@ class RoombaBot:
         local_users = await self.get_local_users(room_id)
 
         async with aiohttp.ClientSession() as session:
+            async with session.get(v1_url, headers=headers) as resp:
+                if resp.status == 200:
+                    room_name = (await resp.json()).get("name")
+                else:
+                    room_name = None
+
             async with session.delete(url, headers=headers, json=body) as resp:
                 if resp.status == 200:
                     response = await resp.json()
                     delete_id = response.get("delete_id")
                     self.logger.debug(
-                        f"Room {room_id} shutdown initiated successfully: delete_id={delete_id}"
+                        f"Room {room_id}{f' ({room_name})' if room_name else ''} shutdown initiated successfully: delete_id={delete_id}"
                     )
                     await self.send_message(
                         self.moderation_room_id,
-                        f"Room {room_id} shutdown initiated successfully. Delete ID: {delete_id}. Local users: {', '.join(local_users)}",
+                        f"Room {room_id}{f' ({room_name})' if room_name else ''} shutdown initiated successfully. Delete ID: {delete_id}. Local users: {', '.join(local_users)}",
                     )
                 else:
                     self.logger.error(
