@@ -76,9 +76,13 @@ class RoombaBot:
             return
 
         if event.body.startswith("!roomba block"):
-            await self.block_room(event.body.split()[2], True)
+            for room_id in event.body.split()[2:]:
+                await self.block_room(room_id, True)
+
         elif event.body.startswith("!roomba unblock"):
-            await self.block_room(event.body.split()[2], False)
+            for room_id in event.body.split()[2:]:
+                await self.block_room(room_id, False)
+
         elif event.body.startswith("!roomba shutdown"):
             parts = event.body.split()
 
@@ -88,12 +92,17 @@ class RoombaBot:
             else:
                 purge = False
 
-            room_id = parts[2]
-            await self.shutdown_room(room_id, purge)
+            for room_id in parts[2:]:
+                await self.shutdown_room(room_id, purge)
+
         elif event.body.startswith("!roomba lock"):
-            await self.lock_user(event.body.split()[2])
+            for user_id in event.body.split()[2:]:
+                await self.lock_user(user_id, True)
+
         elif event.body.startswith("!roomba unlock"):
-            await self.unlock_user(event.body.split()[2])
+            for user_id in event.body.split()[2:]:
+                await self.lock_user(user_id, False)
+
         elif event.body and event.body.split()[0] == "!roomba":
             await self.send_message(
                 self.moderation_room_id,
